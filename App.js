@@ -14,6 +14,10 @@ import { Button } from "react-native-paper";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import samplePaths from "./samplePaths.js";
 import * as Location from 'expo-location';
+import Summary from "./components/Summary.js";
+import Display from "./components/Display.js";
+
+
 
 let subscription = null; // location tracking service
 
@@ -26,9 +30,15 @@ export default function App() {
   const [start, setStart] = useState(null);
   const [spot,setSpot] = useState(null);
   const [spots, setSpots] = useState([]);
-  [pscreen, setPscreen] = useState("summary")
+  const [pscreen, setPscreen] = useState("Summary");
+  const [currPath, setCurrPath] = useState(null);
+  const [paths, setPaths] = useState(samplePaths);
   //const [distances, set distances] = useState([]);
 
+  function changeScreen(p, screen){
+    setCurrPath(p);
+    setPscreen(screen);
+  }
     // Start foreground location tracking
   async function startTracking() {
     let perm = await Location.requestForegroundPermissionsAsync();
@@ -45,9 +55,11 @@ export default function App() {
     }
 
     // Reset myCoord and coords state variables for new tracking session 
-    setMyCoord(null)
+    setMyCoord(null);
     setCoords([]);
    
+    
+
     console.log('Starting location subscription service.')
     let s = await Location.getCurrentPositionAsync();
     setStart({latitude: s.coords.latitude, longitude: s.coords.longitude});
@@ -105,74 +117,21 @@ export default function App() {
     }
   };
 
-  return (
-    
-    <SafeAreaView style={styles.container}>
-      { pscreen === "Recording" && 
-      <View>
-          { (myCoord === null) ?
-        <Text>Waiting for location to display map ...</Text> :
-        <MapView style={styles.map} 
-        initialRegion={{
-        latitude: myCoord.latitude,
-        longitude: myCoord.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-        }}
-        showsCompass={true} 
-        showsUserLocation={true} 
-        rotateEnabled={true}
-      >
-        <Marker
-          key = "start"
-          coordinate = {start}
-          pinColor = "red"
-          title = "Start">
-
-        </Marker>
-        {/* <Marker key='myLocation'                                                          
-          coordinate={ myCoord }
-          pinColor='green'
-          title='My location'>
-        </Marker>  */}
-        <Polyline 
-           coordinates={coords}
-           strokeColor= "pink"
-         />
-     </MapView>  
   
-    }
-      </View>
-      }
-     
-    { pscreen === "Recording" &&
-    <View style={styles.controls}>
-        <Button title="Start Tracking" onPress={startTracking} color='green'/>
-        <Button title="Stop Tracking" onPress={stopTracking} color='red'/>
-        <Button title='Add Spot' onPress> </Button>
-    </View>
-  }
-  { pscreen === "Recording" &&
-     <ScrollView style={styles.data}>
-       <Text>Permission: {JSON.stringify(permissionText)}</Text>   
-       <Text>Start Coord: {JSON.stringify(start)}</Text>   
-       <Text>Current myCoord: {JSON.stringify(myCoord)}</Text> 
-       <Text>coords: {JSON.stringify(coords, null, 2)}</Text> 
 
-    </ScrollView>
-    }
+  return (
+        
+    <SafeAreaView style={styles.container}>
+        {pscreen=== "Summary" && <Summary myPaths = {paths} display = {changeScreen}/>}
+        {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen}/>}
     </SafeAreaView>
   );
+
+
+ 
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    paddingTop: Constants.statusBarHeight,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
   pscreen:{
     flex: 1,
     flexDirection: 'column',
@@ -182,13 +141,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-  },
-  map: {
-    flex: 2, 
+    padding: 10,
     width: '100%',
     height: '100%',
   },
+  
   controls: {
     marginTop: 10, 
     padding: 10, 

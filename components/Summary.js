@@ -2,41 +2,42 @@ import React, { useState, useEffect } from "react";
 import {FlatList, Image, Text, View,  
          StyleSheet, TouchableOpacity } from "react-native";
 import Constants from 'expo-constants';
-import samplePaths from "./samplePaths.js";
+import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
 
 
 
-export default function Summary() {
-
-
- const ListItem = ({title, start, dist}) => (
-   <TouchableOpacity
-        onPress={() => toDisplay()}
-      >
-  <View style={styles.listItem}>
-    <Text style={styles.listItemTitle}>{title}
-    <Text style={styles.listItemText}>{"\nStart Time:"} {start.toLocaleString()}</Text>
-    <Text style={styles.listItemText}>{"\nTotal Distance:"} {dist} {"kilometers"}</Text>
-    </Text>
+export default function Summary({myPaths, display}) {
     
-  </View>
-  </TouchableOpacity>
-);
+
+    const ListItem = ({title, start, dist, path}) => (
+    
+        <TouchableOpacity
+             onPress={() => display(path, "Display")}
+           >
+       <View style={styles.listItem}>
+         <Text style={styles.listItemTitle}>{title}
+         <Text style={styles.listItemText}>{"\nStart Time:"} {start.toLocaleString()}</Text>
+         <Text style={styles.listItemText}>{"\nTotal Distance:"} {dist} {"kilometers"}</Text>
+         </Text>
+         
+       </View>
+       </TouchableOpacity>
+      );
 
   return (
-      <View style={styles.screen}>
-      
+      //<View style={styles.pscreen}>
+      <View style={styles.listWrapper}>
+
       < Text style={styles.title}>Previous Paths</Text>
-        <View style={styles.listWrapper}>
-          <FlatList style={styles.list}
-            data={samplePaths} 
-            renderItem={({item}) => <ListItem title={item.name} start={new Date(item.startTime)} dist = {item.pathDistance} />} 
-            keyExtractor={item => item} 
-          />
-        </View>
+        <FlatList style={styles.list}
+          data={myPaths} 
+          renderItem={({item}) => <ListItem title={item.name} start={new Date(item.startTime)} dist = {item.pathDistance} path = {item}/>} 
+          keyExtractor={item => item} 
+        />
         <Button style = {styles.button} mode="contained" >New Path</Button>
       </View>
+      //</View>
   );
 }
 
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   listWrapper: {
-    height: '70%', 
+    height: '80%', 
     width: '95%',
   },
   list: {
@@ -57,6 +58,11 @@ const styles = StyleSheet.create({
     //borderColor: 'blue',
     backgroundColor: '#F1ECCE',
     paddingTop: 10,
+  },
+  pscreen:{
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   listItem: {
     flexDirection: "row",
@@ -81,7 +87,6 @@ const styles = StyleSheet.create({
 
   },
   title:{
-    justifyContent: "center",
     fontSize: 30,
     margin: 20,
     color: "#1B5299",
@@ -93,3 +98,4 @@ const styles = StyleSheet.create({
   },
 
 });
+
