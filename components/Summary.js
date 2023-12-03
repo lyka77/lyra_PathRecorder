@@ -35,7 +35,8 @@ export default function Summary({myPaths, display}) {
           renderItem={({item}) => <ListItem title={item.name} start={new Date(item.startTime)} dist = {item.pathDistance} path = {item}/>} 
           keyExtractor={item => item} 
         />
-        <Button style = {styles.button} mode="contained" >New Path</Button>
+        <Button style = {styles.button} mode="contained" onPress={() => display(null, "Recording")}>
+          New Path</Button>
       </View>
       //</View>
   );

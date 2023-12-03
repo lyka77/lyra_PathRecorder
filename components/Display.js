@@ -11,12 +11,20 @@ export default function Display({currPath, back}) {
 
   function readableTime(prevDate){
     d = new Date(prevDate);
-    return d.toLocaleString()
+    return d.toLocaleString();
+  }
+
+  function checkUndefined(info){
+    if (info == undefined){
+      return "";
+    }
+    return info;
   }
 
     return(
       <View style= {styles.pscreen}>
-        <Button icon="arrow-left" mode="text" onPress={()=>back(null, "Summary") }> Go Back </Button>
+        <Text style={styles.title}>{currPath.name}</Text>
+       
         <MapView style={styles.map} 
         
         initialRegion={{
@@ -37,17 +45,20 @@ export default function Display({currPath, back}) {
           description={readableTime(currPath.startTime)}/>
           }
         {<Marker 
+          key = "end"
           coordinate = {currPath.coords[currPath.coords.length-1]}
           pinColor = "purple"
           title = "Stop"
           description={readableTime(currPath.stopTime)}
           />}
         {currPath.spots.map(spot => (
+          
         <Marker
+          key = {spot.title}
           coordinate = {spot.coord}
           pinColor = "blue"
           title = {spot.title}
-          description = {spot.moreInfo + " "+ readableTime(spot.time)}
+          description = {checkUndefined(spot.moreInfo) + " "+ readableTime(spot.time)}
           />
         ))}
         
@@ -57,7 +68,12 @@ export default function Display({currPath, back}) {
            strokeWidth={3}
          />}
           </MapView>
-          
+          <Button style = {styles.button} 
+          textColor = "#1B5299"
+          buttonColor =  "#9FC2CC"
+          icon="arrow-left" 
+          mode="elevated" 
+          onPress={()=>back(null, "Summary") }> Go Back </Button>
           </View>
     );
     
@@ -123,14 +139,13 @@ const styles = StyleSheet.create({
 
   },
   title:{
-    justifyContent: "center",
-    fontSize: 30,
+    textAlign: "center",
+    fontSize: 20,
     margin: 20,
     color: "#1B5299",
     fontWeight: "bold"
   },
   button: {
-      margin: 20,
-      backgroundColor: "#1B5299"
+      margin: 10,
   },
 });
