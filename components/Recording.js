@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {Dimensions,Modal, TextInput,FlatList, Text, View, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
 import { SegmentedButtons,Button } from "react-native-paper";
@@ -9,16 +9,17 @@ import * as Location from 'expo-location';
 let subscription = null; // location tracking service
 const { width } = Dimensions.get("window");
 
-export default function Recording({}){
+export default function Recording({checkUndefined, readableTime}){
     const [permissionText, setPermissionText] 
     = useState('Location permission not requested yet');
     const [myCoord, setMyCoord] = useState(null);
     //const [prevCoord, setPrevCoord] = useState(null)
     const [coords, setCoords] = useState([]);
     const [start, setStart] = useState(null);
-    const [spot,setSpot] = useState(null);
     const [spots, setSpots] = useState([]);
     const [isModalVisible, setModalVisible] = useState(false);
+    const [currPath, setCurrPath] = useState(null);
+    const [recording, setRecording] = useState(false);
 
     /* // Original app hand only one text state.
        // Lyn split it into two states for simplicity
@@ -28,96 +29,141 @@ export default function Recording({}){
     */
 
     // Manages text within the dialog popup
-    const [Title, setTitle] = useState('');
-    const [MoreInfo, setMoreInfo] = useState('');
+    const [titleInput, setTitleInput] = useState('');
+    const [moreInfoInput, setMoreInfoInput] = useState('');
+    const [date, setDate] = useState(null);
 
     // Manages text returned by the dialog popup
-    const [dialogResultValue, setDialogResultValue] = useState('');
+    const [titleResultValue, setTitleResultValue] = useState('');
+    const [moreInfoResultValue, setMoreInfoResultValue] = useState('');
 
+    //Modal text input pops up
     function enterDialog() {
-        setTitle('');
+        setTitleInput('');
+        setMoreInfoInput('');
         setModalVisible(true);
+        setDate(new Date(Date.now()));
+
     }
+    //Modal text input goes away and new spot is added to the map
     function exitDialog () {
-      setDialogResultValue(Title);
+      setTitleResultValue(titleInput);
+      setMoreInfoResultValue(moreInfoInput);
       setModalVisible(false);
-      newSpot({myCoord, Title, MoreInfo, })
+      console.log(titleResultValue);
+      console.log(moreInfoResultValue);
+      const newSpot = {"title": titleInput,
+      "moreInfo": moreInfoInput,
+      "time": date.toLocaleString(), 
+      "coord": myCoord};
 
-  }
-
-function newSpot({coord, ttl, info}){
-  date = Date.now;
-  d1 = new Date(date)
-  let ns = {title: ttl,
-  moreInfo: info,
-  time: d1.toLocaleString(),  // "09/26/2015 08:35:45 AM"
-  coord: coord,	 };
-  setSpot((prevSpots =>{
-    return([...prevSpots, ns]);
-  }));
-}
-
-async function startTracking() {
-  let perm = await Location.requestForegroundPermissionsAsync();
-  setPermissionText(perm);
-  if (perm.status !== 'granted') {
-    console.log('Permission to access location was denied');
-    return;
-  }
-
-  // Shut down a foreground service subscription that's already running
-  if (subscription !== null) {
-    console.log('Stopping active location subscription service.')
-    subscription.remove();
-  }
-
-  // Reset myCoord and coords state variables for new tracking session 
-  setMyCoord(null);
-  setCoords([]);
- 
-  
-
-  console.log('Starting location subscription service.')
-  let s = await Location.getCurrentPositionAsync();
-  if (s !== null){setStart({latitude: s.coords.latitude, longitude: s.coords.longitude});
-  setCoords([start]);}
-  //setPrevCoord(start);
-  subscription = await Location.watchPositionAsync(
-    // Argument #1: location options                      
-    {
-    // accuracy options at https://docs.expo.dev/versions/latest/sdk/location/#accuracy
-      // accuracy: Location.Accuracy.Lowest, // 3km
-      // accuracy: Location.Accuracy.Low, // 1km
-      // accuracy: Location.Accuracy.Balanced, // 100m
-      // accuracy: Location.Accuracy.High, // 10m
-      // accuracy: Location.Accuracy.Highest,
-      accuracy: Location.Accuracy.BestForNavigation,
-      
-      distanceInterval: 5 // In meters. Try other distance intervals!
-    // Argument #2: callback invoked on each new location from tracking service 
-    },          
-                                                                
-    newLocation => {
-      const newCoord = {
-        latitude: newLocation.coords.latitude, 
-        longitude: newLocation.coords.longitude
-      }
-      console.log('Moved to new coord.', newCoord);
-   
-      console.log('myCoord =', myCoord, '; coords =', coords);
-      //setPrevCoord(myCoord);
-      setMyCoord(prevMyCoord => {
-        console.log('prevMyCoord =', prevMyCoord); 
-        return newCoord;
+      setSpots((prevSpots) => {
+        return [...prevSpots, newSpot ];
       });
-      
-      setCoords(prevCoords => {
-        console.log('prevCoords =', prevCoords); 
-        return [...prevCoords, newCoord]; 
-      });
+
+      //console.log(spots);
+
+  }
+
+  useEffect(() => {
+    // This effect code is executed on every render: 
+    if (subscription === null) {
+      startTracking();
     }
-  );
-}
+  }, []);
+
+  // Start foreground location tracking
+  async function startTracking() {
+    let perm = await Location.requestForegroundPermissionsAsync();
+    setPermissionText(perm);
+    if (perm.status !== 'granted') {
+      console.log('Permission to access location was denied');
+      return;
+    }
+
+    // ***Key change from code with explicit buttons***
+    // Do *not* emove previous subscription!
+    // Want to keep subscription from previous render. 
+    /* 
+    // Shut down a foreground service subscription that's already running
+    if (subscription !== null) {
+      console.log('Stopping active location subscription service.')
+      subscription.remove();
+    }
+    */
+
+    // Reset myCoord and coords state variables for new tracking session 
+    setMyCoord(null)
+    setCoords([]);
+
+    console.log('Starting location subscription service.')
+    subscription = await Location.watchPositionAsync(
+      // Argument #1: location options                      
+      {
+      // accuracy options at https://docs.expo.dev/versions/latest/sdk/location/#accuracy
+        // accuracy: Location.Accuracy.Lowest, // 3km
+        // accuracy: Location.Accuracy.Low, // 1km
+        // accuracy: Location.Accuracy.Balanced, // 100m
+        // accuracy: Location.Accuracy.High, // 10m
+        // accuracy: Location.Accuracy.Highest,
+        accuracy: Location.Accuracy.BestForNavigation,
+        
+        distanceInterval: 5 // In meters. Try other distance intervals!
+      // Argument #2: callback invoked on each new location from tracking service 
+      },                                                                        
+      newLocation => {
+        const newCoord = {
+          latitude: newLocation.coords.latitude, 
+          longitude: newLocation.coords.longitude
+        }
+        console.log('Moved to new coord.', newCoord);
+        // In console.log below, rather unexpectedly, myCoord is always null and
+        // coords is always []! This is an example of the "stale closure" problem
+        // This means that in this location callback function, myCoord and coords
+        // themselves will *never* appear to be updated! But calls to setMyCoord
+        // and setCoords will correctly update these state variables for the JSX,
+        // and the correct current values can be accesed using the versions of
+        // setMyCoord and setCoords that transform the previous value to the 
+        // new value. 
+        console.log('myCoord =', myCoord, '; coords =', coords);
+        setMyCoord(prevMyCoord => {
+          console.log('prevMyCoord =', prevMyCoord); 
+          return newCoord;
+        });
+
+          setCoords(prevCoords => {
+          console.log('prevCoords =', prevCoords); 
+          return [...prevCoords, newCoord]; 
+        });
+        
+        
+      }
+    );
+  }
+
+  // This function is not called in this version 
+  // Stop foreground location tracking
+  function stopTracking() {
+    if (subscription !== null) {
+      console.log('Stopping active location subscription service.')
+      subscription.remove();
+    }
+  };
+
+  async function startRecording(){
+    setRecording(true);
+    await Location.getLastKnownPositionAsync().then((s)=>
+    {
+      setStart({latitude: s.coords.latitude, longitude: s.coords.longitude});
+      setCoords([start, ...coords,]);
+    });
+    
+  }
+
+  function stopRecording(){
+
+  }
+
 return(
     <View style= {styles.pscreen}>
         
@@ -149,14 +195,14 @@ return(
     strokeWidth={3}
    />
 
-{spots.map(spot => (
+{spots.map((s) => (
           
           <Marker
-            key = {spot.title}
-            coordinate = {spot.coord}
+            key = {s.title}
+            coordinate = {s.coord}
             pinColor = "blue"
-            title = {spot.title}
-            description = {checkUndefined(spot.moreInfo) + " "+ readableTime(spot.time)}
+            title = {s.title}
+            description = {checkUndefined(s.moreInfo) + " "+ s.time}
             />
           ))}
 
@@ -168,12 +214,13 @@ return(
                 <Button 
                 textColor = "#1B5299"
                 buttonColor =  "#9FC2CC"
-                onPress={startTracking}
+                onPress={startRecording}
                 mode="elevated" >Start Recording</Button>
             </View>
             <View style={styles.button}>
                 <Button textColor = "#1B5299"
                 buttonColor =  "#9FC2CC"  
+                onPress = {stopRecording}
                 mode="elevated" >Stop Recording</Button>
             </View>
             
@@ -183,13 +230,12 @@ return(
                 <Button textColor = "#9FC2CC"
                 buttonColor =  "#1B5299"
                 onPress = {enterDialog}
-                mode="elevated" >Add Stop</Button>
+                mode="elevated">Add Stop</Button>
             </View>
         </View>
       
 
-            {/**  Show the text entered from most recent dialog popup*/}
-            <Text style={styles.textOutput}>You entered the text:{'\n'}{dialogResultValue}</Text>
+           
   
             {/** This is our modal component containing textinput and a button */}
             <Modal animationType="slide" 
@@ -199,11 +245,11 @@ return(
                 <View style={styles.modalViewWrapper}>
                     <View style={styles.modalView}>
                         <TextInput placeholder="Title..." 
-                                   value={Title} style={styles.textInput} 
-                                   onChangeText={(value) => setTitle(value)} />
+                                   value={titleInput} style={styles.textInput} 
+                                   onChangeText={(value) => setTitleInput(value)} />
                                    <TextInput placeholder="More Info..." 
-                                   value={MoreInfo} style={styles.textInput} 
-                                   onChangeText={(value) => setMoreInfo(value)} />
+                                   value={moreInfoInput} style={styles.textInput} 
+                                   onChangeText={(value) => setMoreInfoInput(value)} />
   
                         {/** This button is responsible to close the modal */}
                         <Button 

@@ -7,19 +7,9 @@ import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
 
 
-export default function Display({currPath, back}) {
+export default function Display({currPath, back, checkUndefined, readableTime}) {
 
-  function readableTime(prevDate){
-    d = new Date(prevDate);
-    return d.toLocaleString();
-  }
-
-  function checkUndefined(info){
-    if (info == undefined){
-      return "";
-    }
-    return info;
-  }
+  
 
     return(
       <View style= {styles.pscreen}>

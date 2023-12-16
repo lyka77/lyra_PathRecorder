@@ -32,15 +32,26 @@ export default function App() {
     setCurrPath(p);
     setPscreen(screen);
   }
-    // Start foreground location tracking
+
+  function checkUndefined(info){
+    if (info == undefined){
+      return "";
+    }
+    return info;
+  }
+  function readableTime(prevDate){
+    d = new Date(prevDate);
+    return d.toLocaleString();
+  }
+
   
 
   return (
         
     <SafeAreaView style={styles.container}>
         {pscreen=== "Summary" && <Summary myPaths = {paths} display = {changeScreen}/>}
-        {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen}/>}
-        {pscreen=== "Recording" && <Recording/>}
+        {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen} checkUndefined ={checkUndefined} readableTime = {readableTime}/>}
+        {pscreen=== "Recording" && <Recording checkUndefined ={checkUndefined} readableTime = {readableTime}/>}
     </SafeAreaView>
   );
 
