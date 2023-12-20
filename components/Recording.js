@@ -5,6 +5,8 @@ import { SegmentedButtons,Button } from "react-native-paper";
 import MapView, { Marker, Polyline } from "react-native-maps";
 //import samplePaths from ".../samplePaths.js";
 import * as Location from 'expo-location';
+import PathView from './PathView';
+import {pathDistanceInMeters} from '../distance.js';
 
 let subscription = null; // location tracking service
 const { width } = Dimensions.get("window");
@@ -16,26 +18,25 @@ export default function Recording({checkUndefined, readableTime}){
     //const [prevCoord, setPrevCoord] = useState(null)
     const [coords, setCoords] = useState([]);
     const [start, setStart] = useState(null);
+    const [stop, setStop] = useState(null);
     const [spots, setSpots] = useState([]);
     const [isModalVisible, setModalVisible] = useState(false);
-    const [currPath, setCurrPath] = useState(null);
+    const [currPath, setCurrPath] = useState({});
     const [recording, setRecording] = useState(false);
-
-    /* // Original app hand only one text state.
-       // Lyn split it into two states for simplicity
-  
-       // Manages text input 
-       const [inputValue, setInputValue] = useState('');
-    */
-
     // Manages text within the dialog popup
     const [titleInput, setTitleInput] = useState('');
     const [moreInfoInput, setMoreInfoInput] = useState('');
     const [date, setDate] = useState(null);
-
     // Manages text returned by the dialog popup
     const [titleResultValue, setTitleResultValue] = useState('');
     const [moreInfoResultValue, setMoreInfoResultValue] = useState('');
+    const [saveMode, setSaveMode] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [pathTitle,setPathTitle] = useState('');
+    const [startTime, setStartTime] = useState(null);
+    const [stopTime, setStopTime] = useState(null);
+    const [pathDistance, setPathDistance] = useState(null);
+    const [pathTitleInput, setPathTitleInput] = useState('')
 
     //Modal text input pops up
     function enterDialog() {
@@ -57,13 +58,29 @@ export default function Recording({checkUndefined, readableTime}){
       "time": date.toLocaleString(), 
       "coord": myCoord};
 
+
       setSpots((prevSpots) => {
         return [...prevSpots, newSpot ];
       });
 
       //console.log(spots);
-
   }
+  
+    function savePath(){
+      setModalVisible(false);
+      setPathTitle(pathTitleInput);
+      setCurrPath({"name": pathTitle,
+      "startTime": startTime, 
+      "stopTime": stopTime, 
+      "pathDistance": pathDistance, // kilometers
+      "spots": spots,
+      "coords": coords})
+    }
+
+    function deletePath(){
+      setModalVisible(false);
+    }
+
 
   useEffect(() => {
     // This effect code is executed on every render: 
@@ -81,17 +98,6 @@ export default function Recording({checkUndefined, readableTime}){
       return;
     }
 
-    // ***Key change from code with explicit buttons***
-    // Do *not* emove previous subscription!
-    // Want to keep subscription from previous render. 
-    /* 
-    // Shut down a foreground service subscription that's already running
-    if (subscription !== null) {
-      console.log('Stopping active location subscription service.')
-      subscription.remove();
-    }
-    */
-
     // Reset myCoord and coords state variables for new tracking session 
     setMyCoord(null)
     setCoords([]);
@@ -108,7 +114,7 @@ export default function Recording({checkUndefined, readableTime}){
         // accuracy: Location.Accuracy.Highest,
         accuracy: Location.Accuracy.BestForNavigation,
         
-        distanceInterval: 5 // In meters. Try other distance intervals!
+        distanceInterval: 10 // In meters. Try other distance intervals!
       // Argument #2: callback invoked on each new location from tracking service 
       },                                                                        
       newLocation => {
@@ -117,108 +123,76 @@ export default function Recording({checkUndefined, readableTime}){
           longitude: newLocation.coords.longitude
         }
         console.log('Moved to new coord.', newCoord);
-        // In console.log below, rather unexpectedly, myCoord is always null and
-        // coords is always []! This is an example of the "stale closure" problem
-        // This means that in this location callback function, myCoord and coords
-        // themselves will *never* appear to be updated! But calls to setMyCoord
-        // and setCoords will correctly update these state variables for the JSX,
-        // and the correct current values can be accesed using the versions of
-        // setMyCoord and setCoords that transform the previous value to the 
-        // new value. 
         console.log('myCoord =', myCoord, '; coords =', coords);
         setMyCoord(prevMyCoord => {
           console.log('prevMyCoord =', prevMyCoord); 
           return newCoord;
         });
-
+        if (recording === true){
           setCoords(prevCoords => {
-          console.log('prevCoords =', prevCoords); 
-          return [...prevCoords, newCoord]; 
-        });
+            console.log('prevCoords =', prevCoords); 
+            return [...prevCoords, newCoord]; 
+          });
+        }
+          
         
         
       }
     );
   }
 
-  // This function is not called in this version 
-  // Stop foreground location tracking
-  function stopTracking() {
-    if (subscription !== null) {
-      console.log('Stopping active location subscription service.')
-      subscription.remove();
-    }
-  };
-
   async function startRecording(){
     setRecording(true);
     await Location.getLastKnownPositionAsync().then((s)=>
     {
       setStart({latitude: s.coords.latitude, longitude: s.coords.longitude});
-      setCoords([start, ...coords,]);
+      setCoords([start]);
     });
+    setStartTime(Date.now)
     
   }
 
+
   function stopRecording(){
+    setPathDistance(pathDistanceInMeters(coords));
+    setStopTime(Date.now);
+    setRecording(false);
+    setSaveMode(true);
+    setModalVisible(true);
 
   }
 
 return(
     <View style= {styles.pscreen}>
-        
-    
   { (myCoord === null) ?
   <Text>Waiting for location to display map ...</Text> :
-  <MapView style={styles.map} 
-  initialRegion={{
-  latitude: myCoord.latitude,
-  longitude: myCoord.longitude,
-  latitudeDelta: 0.02,
-  longitudeDelta: 0.02,
-  }}
-  showsCompass={true} 
-  showsUserLocation={true} 
-  rotateEnabled={true}
->
-  
-    <Marker
-      key = "start"
-      coordinate = {start}
-      pinColor = "red"
-      title = "Start">
-    </Marker>
+  <PathView
+    start = {start}
+    openCoord = {myCoord}
+    end = {stop}
+    currPath = {currPath}
+    startTime = {startTime}
+    spots = {spots}
+    coords = {coords}
+    stopTime = {stopTime}
+    recording = {recording}
 
-    <Polyline 
-     coordinates={coords}
-     strokeColor= "#1B5299"
-    strokeWidth={3}
-   />
-
-{spots.map((s) => (
-          
-          <Marker
-            key = {s.title}
-            coordinate = {s.coord}
-            pinColor = "blue"
-            title = {s.title}
-            description = {checkUndefined(s.moreInfo) + " "+ s.time}
-            />
-          ))}
-
-</MapView>  
+  />
 }
 
         <View style={{ flexDirection:"row", justifyContent: "center"}}>
             <View style={styles.button}>
                 <Button 
+                disabled = {recording}
                 textColor = "#1B5299"
                 buttonColor =  "#9FC2CC"
                 onPress={startRecording}
                 mode="elevated" >Start Recording</Button>
             </View>
             <View style={styles.button}>
+            
                 <Button textColor = "#1B5299"
+                disabled = {!recording}
                 buttonColor =  "#9FC2CC"  
                 onPress = {stopRecording}
                 mode="elevated" >Stop Recording</Button>
@@ -228,6 +202,7 @@ return(
         <View style={{ flexDirection:"row", justifyContent: "center"}}>
             <View style={styles.button}>
                 <Button textColor = "#9FC2CC"
+                disabled = {!recording}
                 buttonColor =  "#1B5299"
                 onPress = {enterDialog}
                 mode="elevated">Add Stop</Button>
@@ -237,13 +212,14 @@ return(
 
            
   
-            {/** This is our modal component containing textinput and a button */}
+            {/** Modal for adding spots  */}
             <Modal animationType="slide" 
                    transparent visible={isModalVisible} 
                    presentationStyle="overFullScreen" 
-                   onDismiss={exitDialog}>
+                   //onDismiss={exitDialog}
+                   >
                 <View style={styles.modalViewWrapper}>
-                    <View style={styles.modalView}>
+                    {!saveMode && <View style={styles.modalView}>
                         <TextInput placeholder="Title..." 
                                    value={titleInput} style={styles.textInput} 
                                    onChangeText={(value) => setTitleInput(value)} />
@@ -259,9 +235,45 @@ return(
                         >
                           Add
                         </Button> 
-                    </View>
+                    </View>}
+                    {saveMode && <View style={styles.modalView}>
+                        <Text>Save Path?</Text>
+  
+                        {/** This button is responsible to close the modal */}
+                        {!saving && <Button 
+                           mode="contained"
+                           labelStyle={styles.buttonText}
+                           onPress={()=> setSaving(true)}
+                        >
+                          Save
+                        </Button> }
+                        {!saving && <Button 
+                           mode="contained"
+                           labelStyle={styles.buttonText}
+                           onPress={deletePath}
+                        >
+                          Delete
+                        </Button> }
+                        
+                    </View>}
+                    {saving && <View style={styles.modalView}>
+                    <TextInput placeholder="Path Name" 
+                                   value={pathTitleInput} style={styles.textInput} 
+                                   onChangeText={(value) => setPathTitleInput(value)} />
+                    <Button
+                    mode="contained"
+                    labelStyle={styles.buttonText}
+                    onPress={savePath}>
+                      Save Path
+                    </Button>
+                      
+                      </View>}
+
                 </View>
             </Modal>
+
+
+  
 
     </View>
 );

@@ -198,3 +198,43 @@ async function startTracking() {
     }
   );
 }
+
+
+
+<MapView style={styles.map} 
+  initialRegion={{
+  latitude: myCoord.latitude,
+  longitude: myCoord.longitude,
+  latitudeDelta: 0.02,
+  longitudeDelta: 0.02,
+  }}
+  showsCompass={true} 
+  showsUserLocation={true} 
+  rotateEnabled={true}
+>
+  
+    <Marker
+      key = "start"
+      coordinate = {start}
+      pinColor = "red"
+      title = "Start">
+    </Marker>
+
+    <Polyline 
+     coordinates={coords}
+     strokeColor= "#1B5299"
+    strokeWidth={3}
+   />
+
+{spots.map((s) => (
+          
+          <Marker
+            key = {s.title}
+            coordinate = {s.coord}
+            pinColor = "blue"
+            title = {s.title}
+            description = {checkUndefined(s.moreInfo) + " "+ s.time}
+            />
+          ))}
+
+</MapView> 

@@ -5,6 +5,7 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import Constants from 'expo-constants';
 import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
+import PathView from "./PathView.js";
 
 
 export default function Display({currPath, back, checkUndefined, readableTime}) {
@@ -15,49 +16,18 @@ export default function Display({currPath, back, checkUndefined, readableTime}) 
       <View style= {styles.pscreen}>
         <Text style={styles.title}>{currPath.name}</Text>
        
-        <MapView style={styles.map} 
-        
-        initialRegion={{
-        latitude: currPath.coords[0].latitude,
-        longitude: currPath.coords[0].longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-        }}
-        showsCompass={true} 
-        //showsUserLocation={true} 
-        rotateEnabled={true}
-      >
-       { <Marker
-          key = "start"
-          coordinate = {currPath.coords[0]}
-          pinColor = "red"
-          title = "Start"
-          description={readableTime(currPath.startTime)}/>
-          }
-        {<Marker 
-          key = "end"
-          coordinate = {currPath.coords[currPath.coords.length-1]}
-          pinColor = "purple"
-          title = "Stop"
-          description={readableTime(currPath.stopTime)}
-          />}
-        {currPath.spots.map(spot => (
-          
-        <Marker
-          key = {spot.title}
-          coordinate = {spot.coord}
-          pinColor = "blue"
-          title = {spot.title}
-          description = {checkUndefined(spot.moreInfo) + " "+ readableTime(spot.time)}
-          />
-        ))}
-        
-        {<Polyline 
-           coordinates={currPath.coords}
-           strokeColor= "#1B5299"
-           strokeWidth={3}
-         />}
-          </MapView>
+        <PathView
+        start = {currPath.coords[0]}
+        openCoord = {currPath.coords[0]}
+        end = {currPath.coords[currPath.coords.length-1]}
+        currPath = {currPath}
+        startTime = {currPath.startTime}
+        spots = {currPath.spots}
+        coords = {currPath.coords}
+        stopTime = {currPath.stopTime}
+        recording = {false}
+
+        />
           <Button style = {styles.button} 
           textColor = "#1B5299"
           buttonColor =  "#9FC2CC"
