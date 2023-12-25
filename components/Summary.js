@@ -33,7 +33,8 @@ export default function Summary({myPaths, display}) {
         <FlatList style={styles.list}
           data={myPaths} 
           renderItem={({item}) => <ListItem title={item.name} start={new Date(item.startTime)} dist = {item.pathDistance} path = {item}/>} 
-          keyExtractor={item => item} 
+          keyExtractor={item => item.name} 
+          
         />
         <Button style = {styles.button} mode="contained" onPress={() => display(null, "Recording")}>
           New Path</Button>

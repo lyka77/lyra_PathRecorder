@@ -8,7 +8,7 @@ import { Button } from "react-native-paper";
 import PathView from "./PathView.js";
 
 
-export default function Display({currPath, back, checkUndefined, readableTime}) {
+export default function Display({currPath, back}) {
 
   
 
@@ -17,15 +17,14 @@ export default function Display({currPath, back, checkUndefined, readableTime}) 
         <Text style={styles.title}>{currPath.name}</Text>
        
         <PathView
-        start = {currPath.coords[0]}
         openCoord = {currPath.coords[0]}
+        start = {currPath.coords[0]}
         end = {currPath.coords[currPath.coords.length-1]}
-        currPath = {currPath}
+        recording = {false}
         startTime = {currPath.startTime}
         spots = {currPath.spots}
         coords = {currPath.coords}
         stopTime = {currPath.stopTime}
-        recording = {false}
 
         />
           <Button style = {styles.button} 

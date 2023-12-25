@@ -6,11 +6,9 @@ import Constants from 'expo-constants';
 import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
 
-export default function PathView({openCoord, start, end, recording, mode, startTime, spots, coords, stopTime}){
-  const [showUser, setShowUser] = useState(true);
-    if (mode === "display"){
-      setShowUser(false);
-    }
+export default function PathView({openCoord, start, end, recording, startTime, spots, coords, stopTime}){
+  
+    
 
     function checkUndefined(info){
         if (info == undefined){
@@ -33,7 +31,7 @@ export default function PathView({openCoord, start, end, recording, mode, startT
         longitudeDelta: 0.02,
         }}
         showsCompass={true} 
-        showsUserLocation={showUser} 
+        showsUserLocation={true} 
         rotateEnabled={true}
       >
        { <Marker

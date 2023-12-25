@@ -7,7 +7,7 @@
  * foreground location tracking.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {FlatList, Text, View, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
 import { Button } from "react-native-paper";
@@ -17,41 +17,54 @@ import * as Location from 'expo-location';
 import Summary from "./components/Summary.js";
 import Display from "./components/Display.js";
 import Recording from "./components/Recording.js";
+import * as PathStore from './PathStore.js';
 
 
-let subscription = null; // location tracking service
+
 
 export default function App() {
   
   const [pscreen, setPscreen] = useState("Summary");
   const [currPath, setCurrPath] = useState(null);
   const [paths, setPaths] = useState(samplePaths);
-  //const [distances, set distances] = useState([]);
+
+  useEffect(() => {
+    async function addPersistentPaths() {
+    const persistentPaths = await PathStore.init();
+    console.log(`In useEffect, have ${persistentPaths.length} saved paths`);
+    combineWithSamplePaths(persistentPaths);
+      // You need to define combineWithSamplePaths,
+      // which adds the persistently stored paths to the
+      // samplePaths in the state variable that holds all paths.
+    }
+    addPersistentPaths();
+  }, []);
+
+  function combineWithSamplePaths(persPaths){
+    setPaths((prevPaths) => {
+      return [...prevPaths, ...persPaths]
+    })
+  }
 
   function changeScreen(p, screen){
     setCurrPath(p);
     setPscreen(screen);
   }
 
-  function checkUndefined(info){
-    if (info == undefined){
-      return "";
-    }
-    return info;
-  }
-  function readableTime(prevDate){
-    d = new Date(prevDate);
-    return d.toLocaleString();
+  function extendPaths(path){
+    setPaths(prevPaths =>{
+      return [...prevPaths, path]
+    })
   }
 
-  
+
 
   return (
         
     <SafeAreaView style={styles.container}>
         {pscreen=== "Summary" && <Summary myPaths = {paths} display = {changeScreen}/>}
-        {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen} checkUndefined ={checkUndefined} readableTime = {readableTime}/>}
-        {pscreen=== "Recording" && <Recording checkUndefined ={checkUndefined} readableTime = {readableTime}/>}
+        {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen}/>}
+        {pscreen=== "Recording" && <Recording back = {changeScreen} extendPaths = {extendPaths} pathNames = {paths.map((path) => path.name)}/>}
     </SafeAreaView>
   );
 

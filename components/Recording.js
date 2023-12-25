@@ -7,18 +7,17 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from 'expo-location';
 import PathView from './PathView';
 import {pathDistanceInMeters} from '../distance.js';
+import * as PathStore from '../PathStore.js';
 
 let subscription = null; // location tracking service
 const { width } = Dimensions.get("window");
 
-export default function Recording({checkUndefined, readableTime}){
+export default function Recording({back, extendPaths, pathNames}){
     const [permissionText, setPermissionText] 
     = useState('Location permission not requested yet');
     const [myCoord, setMyCoord] = useState(null);
-    //const [prevCoord, setPrevCoord] = useState(null)
-    const [coords, setCoords] = useState([]);
-    const [start, setStart] = useState(null);
     const [stop, setStop] = useState(null);
+    const [coords, setCoords] = useState([]);
     const [spots, setSpots] = useState([]);
     const [isModalVisible, setModalVisible] = useState(false);
     const [currPath, setCurrPath] = useState({});
@@ -36,7 +35,8 @@ export default function Recording({checkUndefined, readableTime}){
     const [startTime, setStartTime] = useState(null);
     const [stopTime, setStopTime] = useState(null);
     const [pathDistance, setPathDistance] = useState(null);
-    const [pathTitleInput, setPathTitleInput] = useState('')
+    const [pathTitleInput, setPathTitleInput] = useState('');
+    const [invalidTitle, setInvalidTitle] = useState(false);
 
     //Modal text input pops up
     function enterDialog() {
@@ -67,110 +67,135 @@ export default function Recording({checkUndefined, readableTime}){
   }
   
     function savePath(){
-      setModalVisible(false);
+      if (pathNames.includes(pathTitleInput)){
+        setInvalidTitle(true);
+
+      } else{
+        setInvalidTitle(false);
+        setModalVisible(false);
       setPathTitle(pathTitleInput);
-      setCurrPath({"name": pathTitle,
-      "startTime": startTime, 
-      "stopTime": stopTime, 
-      "pathDistance": pathDistance, // kilometers
+      //setCurrPath();
+      /* extendPaths({"name": pathTitleInput,
+      "startTime": new Date(startTime), 
+      "stopTime": new Date(stopTime), 
+      "pathDistance": pathDistance/1000, // kilometers
+      "spots": spots,
+      "coords": coords}); */
+      //console.log(currPath);
+      PathStore.storePath({"name": pathTitleInput,
+      "startTime": new Date(startTime), 
+      "stopTime": new Date(stopTime), 
+      "pathDistance": pathDistance/1000, // kilometers
       "spots": spots,
       "coords": coords})
+      back(null, "Summary");
+
+      }
+      
     }
 
     function deletePath(){
       setModalVisible(false);
+      setSpots([]);
+      setCurrPath({});
+      setCoords([]);
+      setStartTime(null);
+      setStopTime(null);
+      setStop(null);
+      setMyCoord(null);
     }
 
 
-  useEffect(() => {
-    // This effect code is executed on every render: 
-    if (subscription === null) {
-      startTracking();
-    }
-  }, []);
-
-  // Start foreground location tracking
-  async function startTracking() {
-    let perm = await Location.requestForegroundPermissionsAsync();
-    setPermissionText(perm);
-    if (perm.status !== 'granted') {
-      console.log('Permission to access location was denied');
-      return;
-    }
-
-    // Reset myCoord and coords state variables for new tracking session 
-    setMyCoord(null)
-    setCoords([]);
-
-    console.log('Starting location subscription service.')
-    subscription = await Location.watchPositionAsync(
-      // Argument #1: location options                      
-      {
-      // accuracy options at https://docs.expo.dev/versions/latest/sdk/location/#accuracy
-        // accuracy: Location.Accuracy.Lowest, // 3km
-        // accuracy: Location.Accuracy.Low, // 1km
-        // accuracy: Location.Accuracy.Balanced, // 100m
-        // accuracy: Location.Accuracy.High, // 10m
-        // accuracy: Location.Accuracy.Highest,
-        accuracy: Location.Accuracy.BestForNavigation,
-        
-        distanceInterval: 10 // In meters. Try other distance intervals!
-      // Argument #2: callback invoked on each new location from tracking service 
-      },                                                                        
-      newLocation => {
-        const newCoord = {
-          latitude: newLocation.coords.latitude, 
-          longitude: newLocation.coords.longitude
-        }
-        console.log('Moved to new coord.', newCoord);
-        console.log('myCoord =', myCoord, '; coords =', coords);
-        setMyCoord(prevMyCoord => {
-          console.log('prevMyCoord =', prevMyCoord); 
-          return newCoord;
-        });
-        if (recording === true){
+    async function startTracking() {
+      setRecording(true);
+      let perm = await Location.requestForegroundPermissionsAsync();
+      setPermissionText(perm);
+      if (perm.status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+  
+      // Shut down a foreground service subscription that's already running
+      if (subscription !== null) {
+        console.log('Stopping active location subscription service.')
+        subscription.remove();
+      }
+  
+      // Reset myCoord and coords state variables for new tracking session 
+      setMyCoord(null)
+      setCoords([]);
+     
+      console.log('Starting location subscription service.')
+      subscription = await Location.watchPositionAsync(
+        // Argument #1: location options                      
+        {
+        // accuracy options at https://docs.expo.dev/versions/latest/sdk/location/#accuracy
+          // accuracy: Location.Accuracy.Lowest, // 3km
+          // accuracy: Location.Accuracy.Low, // 1km
+          // accuracy: Location.Accuracy.Balanced, // 100m
+          // accuracy: Location.Accuracy.High, // 10m
+          // accuracy: Location.Accuracy.Highest,
+          accuracy: Location.Accuracy.BestForNavigation,
+          
+          distanceInterval: 1 // In meters. Try other distance intervals!
+        // Argument #2: callback invoked on each new location from tracking service 
+        },                                                                        
+        newLocation => {
+          const newCoord = {
+            latitude: newLocation.coords.latitude, 
+            longitude: newLocation.coords.longitude
+          }
+          console.log('Moved to new coord.', newCoord);
+          // In console.log below, rather unexpectedly, myCoord is always null and
+          // coords is always []! This is an example of the "stale closure" problem
+          // This means that in this location callback function, myCoord and coords
+          // themselves will *never* appear to be updated! But calls to setMyCoord
+          // and setCoords will correctly update these state variables for the JSX,
+          // and the correct current values can be accesed using the versions of
+          // setMyCoord and setCoords that transform the previous value to the 
+          // new value. 
+          console.log('myCoord =', myCoord, '; coords =', coords);
+          /*
+          setMyCoord(newCoord);
+          setCoords([...coords, newCoord]);
+          */
+          //setCoords(prevCoords => [...prevCoords, newCoord])
+          setMyCoord(prevMyCoord => {
+            console.log('prevMyCoord =', prevMyCoord); 
+            return newCoord;
+          });
           setCoords(prevCoords => {
             console.log('prevCoords =', prevCoords); 
             return [...prevCoords, newCoord]; 
           });
-        }
-          
-        
-        
-      }
-    );
-  }
-
-  async function startRecording(){
-    setRecording(true);
-    await Location.getLastKnownPositionAsync().then((s)=>
-    {
-      setStart({latitude: s.coords.latitude, longitude: s.coords.longitude});
-      setCoords([start]);
-    });
-    setStartTime(Date.now)
     
-  }
+        }
+      );
+    }
+  
+    // Stop foreground location tracking
+    function stopTracking() {
+      if (subscription !== null) {
+        console.log('Stopping active location subscription service.')
+        subscription.remove();
+        setPathDistance(pathDistanceInMeters(coords));
+        setStopTime(Date.now);
+        setRecording(false);
+        setSaveMode(true);
+        setModalVisible(true);
+        setStop(coords[coords.length-1]);
+      }
+    };
 
-
-  function stopRecording(){
-    setPathDistance(pathDistanceInMeters(coords));
-    setStopTime(Date.now);
-    setRecording(false);
-    setSaveMode(true);
-    setModalVisible(true);
-
-  }
 
 return(
     <View style= {styles.pscreen}>
   { (myCoord === null) ?
   <Text>Waiting for location to display map ...</Text> :
   <PathView
-    start = {start}
+    start = {coords[0]}
     openCoord = {myCoord}
     end = {stop}
-    currPath = {currPath}
     startTime = {startTime}
     spots = {spots}
     coords = {coords}
@@ -186,7 +211,7 @@ return(
                 disabled = {recording}
                 textColor = "#1B5299"
                 buttonColor =  "#9FC2CC"
-                onPress={startRecording}
+                onPress={startTracking}
                 mode="elevated" >Start Recording</Button>
             </View>
             <View style={styles.button}>
@@ -194,7 +219,7 @@ return(
                 <Button textColor = "#1B5299"
                 disabled = {!recording}
                 buttonColor =  "#9FC2CC"  
-                onPress = {stopRecording}
+                onPress = {stopTracking}
                 mode="elevated" >Stop Recording</Button>
             </View>
             
@@ -212,13 +237,14 @@ return(
 
            
   
-            {/** Modal for adding spots  */}
+            {/** Multipurpose Modal*/}
             <Modal animationType="slide" 
                    transparent visible={isModalVisible} 
                    presentationStyle="overFullScreen" 
                    //onDismiss={exitDialog}
                    >
                 <View style={styles.modalViewWrapper}>
+                  {/** View for adding spots  */}
                     {!saveMode && <View style={styles.modalView}>
                         <TextInput placeholder="Title..." 
                                    value={titleInput} style={styles.textInput} 
@@ -227,7 +253,7 @@ return(
                                    value={moreInfoInput} style={styles.textInput} 
                                    onChangeText={(value) => setMoreInfoInput(value)} />
   
-                        {/** This button is responsible to close the modal */}
+                        {/** This button is responsible for closing the modal */}
                         <Button 
                            mode="contained"
                            labelStyle={styles.buttonText}
@@ -236,6 +262,7 @@ return(
                           Add
                         </Button> 
                     </View>}
+                    {/** View for  choosing saving or deleting path  */}
                     {saveMode && <View style={styles.modalView}>
                         <Text>Save Path?</Text>
   
@@ -256,6 +283,8 @@ return(
                         </Button> }
                         
                     </View>}
+
+                    {/** View for saving path/setting title */}
                     {saving && <View style={styles.modalView}>
                     <TextInput placeholder="Path Name" 
                                    value={pathTitleInput} style={styles.textInput} 
@@ -266,6 +295,7 @@ return(
                     onPress={savePath}>
                       Save Path
                     </Button>
+                    {invalidTitle && <Text style = {{color: 'red', marginTop: 5}}>That name is taken, please enter another</Text>}
                       
                       </View>}
 
