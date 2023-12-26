@@ -1,78 +1,86 @@
 import React, { useState, useEffect } from "react";
-import {FlatList, Image, Text, View,  
-         StyleSheet, TouchableOpacity } from "react-native";
+import {
+  FlatList, Image, Text, View,
+  StyleSheet, TouchableOpacity
+} from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import Constants from 'expo-constants';
 import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
 
-export default function PathView({openCoord, start, end, recording, startTime, spots, coords, stopTime}){
-  
-    
+export default function PathView({ openCoord, start, end, recording, startTime, spots, coords, stopTime }) {
 
-    function checkUndefined(info){
-        if (info == undefined){
-          return "";
-        }
-        return info;
-      }
-      function readableTime(prevDate){
-        d = new Date(prevDate);
-        return d.toLocaleString();
-      }
 
-    return(
-        <MapView style={styles.map} 
-        
-        initialRegion={{
+
+  function checkUndefined(info) {
+    if (info == undefined) {
+      return "";
+    }
+    return info;
+  }
+  function readableTime(prevDate) {
+    d = new Date(prevDate);
+    return d.toLocaleString();
+  }
+
+  return (
+    <MapView style={styles.map}
+
+      initialRegion={{
         latitude: openCoord.latitude,
         longitude: openCoord.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
-        }}
-        showsCompass={true} 
-        showsUserLocation={true} 
-        rotateEnabled={true}
-      >
-       { <Marker
-          key = "start"
-          coordinate = {start}
-          pinColor = "red"
-          title = "Start"
-          description={readableTime(startTime)}/>
-        }
-        {!recording && <Marker 
-          key = "end"
-          coordinate = {end}
-          pinColor = "purple"
-          title = "Stop"
-          description={readableTime(stopTime)}
-          />}
-        {spots.map(spot => (
-          
+      }}
+      showsCompass={true}
+      showsUserLocation={true}
+      rotateEnabled={true}
+    >
+      {<Marker
+        key="start"
+        coordinate={start}
+        pinColor="red"
+        title="Start"
+        description={readableTime(startTime)} />
+      }
+      {recording && <Marker
+        key="currLocation"
+        coordinate={openCoord}
+        pinColor='#f15bb5'
+        title="Me"
+      />}
+      {!recording && <Marker
+        key="end"
+        coordinate={end}
+        pinColor="purple"
+        title="Finish"
+        description={readableTime(stopTime)}
+      />}
+      {spots.map(spot => (
+
         <Marker
-          key = {spot.title}
-          coordinate = {spot.coord}
-          pinColor = "blue"
-          title = {spot.title}
-          description = {checkUndefined(spot.moreInfo) + " "+ readableTime(spot.time)}
-          />
-        ))}
-        
-        {<Polyline 
-           coordinates={coords}
-           strokeColor= "#1B5299"
-           strokeWidth={3}
-         />}
-          </MapView>
-        );
+          key={spot.title}
+          coordinate={spot.coord}
+          pinColor="blue"
+          title={spot.title}
+          description={checkUndefined(spot.moreInfo) + " " + readableTime(spot.time)}
+        />
+      ))}
+
+      {<Polyline
+        coordinates={coords}
+        strokeColor="#1B5299"
+        strokeWidth={3}
+      />}
+    </MapView>
+  );
 }
 
 
 
 const styles = StyleSheet.create({
 
-  pscreen:{
+  pscreen: {
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
@@ -86,7 +94,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   map: {
-    flex: 1, 
+    flex: 1,
     width: '100%',
     height: '100%',
     //alignItems: 'center',
@@ -98,7 +106,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   listWrapper: {
-    height: '90%', 
+    height: '90%',
     width: '95%',
   },
   list: {
@@ -129,7 +137,7 @@ const styles = StyleSheet.create({
     color: "#1B5299",
 
   },
-  title:{
+  title: {
     textAlign: "center",
     fontSize: 20,
     margin: 20,
@@ -137,6 +145,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold"
   },
   button: {
-      margin: 10,
+    margin: 10,
   },
 });
