@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from "react";
-import {
-  FlatList, Image, Text, View,
-  StyleSheet, TouchableOpacity
-} from "react-native";
+import React, { useState } from "react";
+import { StyleSheet } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import Constants from 'expo-constants';
-import samplePaths from "../samplePaths.js";
-import { Button } from "react-native-paper";
+
 
 export default function PathView({ openCoord, start, end, recording, startTime, spots, coords, stopTime }) {
 
 
-
+  /** checkUndefined handles the case where the moreInfo section of a spot is empty
+   * params: info - a string containing the spot description
+   * returns: an empty string if the user chose not to write a description
+   *          the info string otherwise
+   */
   function checkUndefined(info) {
     if (info == undefined) {
       return "";
     }
     return info;
   }
+
+  /** readableTime takes in a date in milliseconds and makes it into a readable date and time
+   * params: prevDate - a date in milliseconds since Jan 1, 1970
+   * returns: a readable date in the general form '11/14/2023, 1:31:46 PM'
+   */
   function readableTime(prevDate) {
     d = new Date(prevDate);
     return d.toLocaleString();

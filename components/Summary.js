@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
-import {FlatList, Image, Text, View,  
+import {FlatList, Text, View,  
          StyleSheet, TouchableOpacity } from "react-native";
 import Constants from 'expo-constants';
-import samplePaths from "../samplePaths.js";
 import { Button } from "react-native-paper";
 
 
 
 export default function Summary({myPaths, display}) {
     
-
+    // A list item displaying the title, start time, and total distance of a path in myPaths
     const ListItem = ({title, start, dist, path}) => (
     
         <TouchableOpacity
@@ -28,7 +27,6 @@ export default function Summary({myPaths, display}) {
   return (
       //<View style={styles.pscreen}>
       <View style={styles.listWrapper}>
-
       < Text style={styles.title}>Previous Paths</Text>
         <FlatList style={styles.list}
           data={myPaths} 

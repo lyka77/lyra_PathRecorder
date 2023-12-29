@@ -8,12 +8,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import {FlatList, Text, View, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import Constants from 'expo-constants';
-import { Button } from "react-native-paper";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import { SafeAreaView, StyleSheet } from 'react-native';
 import samplePaths from "./samplePaths.js";
-import * as Location from 'expo-location';
 import Summary from "./components/Summary.js";
 import Display from "./components/Display.js";
 import Recording from "./components/Recording.js";
@@ -40,12 +36,21 @@ export default function App() {
     addPersistentPaths();
   }, []);
 
+  /** combineWithSamplePaths takes in a list of path objects that have been stored
+   *  persistently on your device and concatenates it with the paths from sample paths. 
+   *  param: persPaths: a list of persistently stored paths
+   *  returns: the concatenated new list
+   */
   function combineWithSamplePaths(persPaths){
     setPaths((prevPaths) => {
       return [...prevPaths, ...persPaths]
     })
   }
 
+  /** changeScreen takes in a path object and a screen and navigates between pscreens
+   * params: p - a path object, can be null if not used in the Summary component
+   *         screen - the pScreen to navigate to
+   */
   function changeScreen(p, screen){
     setCurrPath(p);
     setPscreen(screen);
