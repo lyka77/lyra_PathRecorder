@@ -33,6 +33,7 @@ Lyra Kalajian
 ## Recording
  - Properties passed to Recording: 
     - back: a function that navigates between pscreens. It is helpful for abstraction purposes, it takes in two parameters, one a path and the other a screen (for use in summary) but in recording the first parameter is null and it is just used to get back to Summary.
+    - extendPaths: a function that adds a path object to the existing list of paths. This handles the fact that upon navigating back to the summary pscreen after recording a new path, the newly persistently stored path will not be be shown until the page is reloaded. This makes sure it is shown in the meantime.
     - pathNames: A list of names of existing paths, used to make sure any new path is not named the same as an exisiting path
     
  - State Hooks:
@@ -104,6 +105,7 @@ Lyra Kalajian
  - Properties passed to Recording:
     - myPaths: a list of path objects that the flatlist should display 
     - display: a function that navigates between pscreens. It is helpful for abstraction purposes, it takes in two parameters, one a path and the other a screen and is used in Summary change to the display screen and also tell display what path to show.
+
 
 ## Lessons
     I learned a lot about React Native, specifically about the mapview and flatlist components and how to use pseudo screens. I also got more comfortable with using state hooks and with passing info between components, and breaking the code down into smaller components in general. I studied a lot of the documentation for react-native-paper. I know more about how location services work as well.

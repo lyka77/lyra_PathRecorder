@@ -56,6 +56,14 @@ export default function App() {
     setPscreen(screen);
   }
 
+  /** extendPaths takes in a path object and adds it to the list of paths using setPaths.
+   * param: path - the path object to be added
+   */
+  function extendPaths(path){
+    setPaths(prevPaths =>{
+      return [...prevPaths, path]
+    })
+  }
 
 
 
@@ -64,7 +72,7 @@ export default function App() {
     <SafeAreaView style={styles.container}>
         {pscreen=== "Summary" && <Summary myPaths = {paths} display = {changeScreen}/>}
         {pscreen=== "Display" && <Display currPath={currPath} back = {changeScreen}/>}
-        {pscreen=== "Recording" && <Recording back = {changeScreen} pathNames = {paths.map((path) => path.name)}/>}
+        {pscreen=== "Recording" && <Recording back = {changeScreen} extendPaths = {extendPaths} pathNames = {paths.map((path) => path.name)}/>}
     </SafeAreaView>
   );
 

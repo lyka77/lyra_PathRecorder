@@ -9,7 +9,7 @@ import * as PathStore from '../PathStore.js';
 let subscription = null; // location tracking service
 const { width } = Dimensions.get("window");
 
-export default function Recording({ back, pathNames }) {
+export default function Recording({ back, extendPaths, pathNames }) {
   const [permissionText, setPermissionText]
     = useState('Location permission not requested yet');
   const [myCoord, setMyCoord] = useState(null);
@@ -68,16 +68,15 @@ export default function Recording({ back, pathNames }) {
     } else {
       setInvalidTitle(false);
       setModalVisible(false);
-      
+      const path = {"name": pathTitleInput,
+      "startTime": new Date(startTime), 
+      "stopTime": new Date(stopTime), 
+      "pathDistance": pathDistance/1000, // kilometers
+      "spots": spots,
+      "coords": coords}
+      extendPaths(path); 
       //console.log(currPath);
-      PathStore.storePath({
-        "name": pathTitleInput,
-        "startTime": (new Date(startTime)),
-        "stopTime": new Date(stopTime),
-        "pathDistance": pathDistance / 1000, // kilometers
-        "spots": spots,
-        "coords": coords
-      })
+      PathStore.storePath(path);
     }
   }
   /** deletePath is called when the delete path button is pressed in the modal. It sets all 
@@ -206,7 +205,7 @@ export default function Recording({ back, pathNames }) {
       <View style={{ flexDirection: "row", justifyContent: "center" }}>
         <View style={styles.button}>
           <Button
-            disabled={recording}
+            disabled={recording || saving}
             textColor="#1B5299"
             buttonColor="#9FC2CC"
             onPress={startTracking}
